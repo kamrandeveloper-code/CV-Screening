@@ -1,300 +1,548 @@
-# **AI-Powered CV Screening & Job Matching System**
 
-🚀 **An intelligent FastAPI-based system for automated CV parsing, skill extraction, and job-candidate matching with explainable AI results.**
+# AI Recruitment System - Intelligent Candidate-Job Matching Platform
 
-[![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
-[![Python](https://img.shields.io/badge/Python-3.8+-blue?style=for-the-badge&logo=python)](https://python.org)
-[![GitHub](https://img.shields.io/badge/GitHub-Repository-black?style=for-the-badge&logo=github)](https://github.com/awaisaleem1/cv-screening-system)
+An advanced AI-powered recruitment system that automatically extracts information from resumes, matches candidates with job postings using hybrid scoring, and provides intelligent shortlisting recommendations.
 
-## 📋 **Features**
+## 🚀 Features
 
-### 🔧 **Core Functionality**
-- **Smart CV Parsing**: Extract structured data from PDF, DOCX, TXT, and image CVs
-- **Job Description Processing**: Automatically extract required and optional skills
-- **Intelligent Skill Matching**: ML-powered matching with explainable results
-- **Candidate Readiness Assessment**: Tier-based classification and interview recommendations
+- **Smart Resume Parsing**: Automatic extraction of candidate information (name, email, phone, skills, education, experience)
+- **Advanced Document Analysis**: LayoutLMv3-powered PDF layout analysis for better text extraction
+- **Intelligent Skill Extraction**: Semantic skill matching using embeddings and comprehensive skill taxonomy
+- **Hybrid Matching Algorithm**: 70% embedding similarity + 30% skill overlap for accurate candidate-job matching
+- **Batch Processing**: Match multiple candidates against job postings in background
+- **Duplicate Detection**: Smart deduplication to prevent duplicate candidate entries
+- **RESTful API**: Complete API endpoints for candidates, jobs, and matching
 
-### 🎯 **Four-Endpoint Architecture**
-1. **CV Parsing** (`POST /cv/upload`) - Upload and parse CVs into structured profiles
-2. **Job Processing** (`POST /job/upload`) - Process job descriptions and extract skills
-3. **Skill Matching** (`POST /match/skills`) - Core matching engine with scoring
-4. **Readiness Summary** (`GET /candidate/{id}/summary`) - Interview readiness assessment
+## 🏗️ System Architecture
 
-### 📊 **Advanced Capabilities**
-- **Multi-format Support**: PDF, DOCX, TXT, PNG, JPG, JPEG
-- **Skill Taxonomy**: Normalized skill database with 50+ technical and soft skills
-- **Explainable AI**: Human-readable matching explanations
-- **Tier Classification**: A+, A, B, C classification with actionable recommendations
-- **Database Integration**: SQLite with SQLAlchemy ORM
-
-## 🚀 **Quick Start**
-
-### **Prerequisites**
-```bash
-# Install system dependencies
-# For OCR functionality (optional but recommended)
-# Windows: Install Tesseract from https://github.com/UB-Mannheim/tesseract/wiki
-# Ubuntu/Debian: sudo apt-get install tesseract-ocr
-# macOS: brew install tesseract
-
-# Install Python packages
-pip install fastapi uvicorn sqlalchemy pdfplumber python-docx pytesseract pillow
-pip install pandas numpy scikit-learn joblib
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     FastAPI Backend                         │
+├─────────────────────────────────────────────────────────────┤
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
+│  │  Candidate   │  │     Job      │  │    Match     │      │
+│  │   Endpoints  │  │  Endpoints   │  │  Endpoints   │      │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘      │
+│         │                 │                 │               │
+│  ┌──────▼─────────────────▼─────────────────▼───────┐      │
+│  │              Service Layer                        │      │
+│  │  CandidateService | JobService | MatchService   │      │
+│  └──────┬─────────────────┬─────────────────┬───────┘      │
+│         │                 │                 │               │
+│  ┌──────▼─────────────────▼─────────────────▼───────┐      │
+│  │              Model Layer                          │      │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌─────────┐ │      │
+│  │  │  Embedding   │  │     NER      │  │ Layout  │ │      │
+│  │  │    Model     │  │    Model     │  │  LMv3   │ │      │
+│  │  └──────────────┘  └──────────────┘  └─────────┘ │      │
+│  └───────────────────────────────────────────────────┘      │
+│                          │                                  │
+│  ┌───────────────────────▼───────────────────────┐         │
+│  │              SQLite Database                   │         │
+│  │    Candidates | Jobs | Matches                 │         │
+│  └────────────────────────────────────────────────┘         │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### **Installation**
-```bash
-# 1. Clone the repository
-git clone https://github.com/awaisaleem1/cv-screening-system.git
-cd cv-screening-system
+## 🤖 AI Models Used
 
-# 2. Install requirements
+### 1. **Embedding Model: BAAI/bge-small-en-v1.5**
+- **Purpose**: Converts text into numerical vectors (embeddings) for similarity comparison
+- **Dimension**: 384-dimensional vectors
+- **Use Case**: 
+  - Convert resume text to embeddings
+  - Convert job descriptions to embeddings
+  - Calculate semantic similarity between candidates and jobs
+- **Why BGE?**: Optimized for retrieval tasks, excellent semantic understanding, fast inference
+
+### 2. **NER Model: xlm-roberta-base-finetuned-conll03-english**
+- **Purpose**: Named Entity Recognition for extracting structured information from resumes
+- **Entities Extracted**:
+  - **PER** (Person): Candidate names
+  - **ORG** (Organization): Previous companies, universities
+  - **LOC/GPE** (Location): Geographic locations
+- **Use Case**:
+  - Extract candidate names from resume headers
+  - Identify company names for work experience
+  - Extract educational institutions
+- **Why XLM-RoBERTa?**: Multilingual support, excellent NER performance, robust to formatting variations
+
+### 3. **LayoutLMv3: microsoft/layoutlmv3-base**
+- **Purpose**: Document layout analysis for better text extraction from complex PDFs
+- **Features**:
+  - Detects document structure (headers, sections, paragraphs)
+  - Identifies section boundaries (Education, Experience, Skills)
+  - Preserves layout information for better context
+- **Use Case**:
+  - Intelligent section segmentation
+  - Better text extraction from multi-column resumes
+  - Improved handling of tables and lists
+- **Why LayoutLMv3?**: State-of-the-art for document understanding, combines text and layout
+
+### 4. **Skill Taxonomy & Semantic Matching**
+- **Comprehensive Skill Database**: Over 200+ predefined technical and soft skills
+- **Semantic Matching**: Uses embeddings to match similar skills (e.g., "Python" matches "python3", "py")
+- **Categories**:
+  - Programming Languages (Python, Java, JavaScript, etc.)
+  - Frameworks (Django, React, Spring Boot, etc.)
+  - Databases (PostgreSQL, MongoDB, Redis, etc.)
+  - Cloud & DevOps (AWS, Docker, Kubernetes, etc.)
+  - Machine Learning (TensorFlow, PyTorch, scikit-learn, etc.)
+  - Soft Skills (Leadership, Communication, Problem Solving, etc.)
+
+## 🔄 System Workflow
+
+### Workflow 1: Candidate Resume Upload
+
+```
+┌─────────────┐
+│   Upload    │
+│   Resume    │
+│   (PDF/     │
+│    DOCX)    │
+└──────┬──────┘
+       │
+       ▼
+┌─────────────────────────────────────────────┐
+│  Step 1: File Processing                     │
+│  ├─ Validate file type & size               │
+│  ├─ Extract raw text                        │
+│  └─ For PDFs: LayoutLMv3 layout analysis    │
+└──────┬──────────────────────────────────────┘
+       │
+       ▼
+┌─────────────────────────────────────────────┐
+│  Step 2: Information Extraction             │
+│  ├─ NER Model: Extract name, organizations  │
+│  ├─ Regex patterns: Email, phone            │
+│  ├─ Semantic extractor: Skills              │
+│  └─ Section analysis: Education, Experience │
+└──────┬──────────────────────────────────────┘
+       │
+       ▼
+┌─────────────────────────────────────────────┐
+│  Step 3: Embedding Generation               │
+│  └─ BGE Model: Create resume embedding      │
+└──────┬──────────────────────────────────────┘
+       │
+       ▼
+┌─────────────────────────────────────────────┐
+│  Step 4: Deduplication Check                │
+│  ├─ Check by email                          │
+│  ├─ Check by phone                          │
+│  └─ Check by name similarity                │
+└──────┬──────────────────────────────────────┘
+       │
+       ▼
+┌─────────────────────────────────────────────┐
+│  Step 5: Database Storage                   │
+│  └─ Store candidate with all extracted data │
+└─────────────────────────────────────────────┘
+```
+
+### Workflow 2: Job Posting Creation
+
+```
+┌─────────────┐
+│ Create Job  │
+│  Posting    │
+└──────┬──────┘
+       │
+       ▼
+┌─────────────────────────────────────────────┐
+│  Step 1: Job Data Processing                │
+│  ├─ Job title, description, company         │
+│  └─ Required skills (manual or auto)        │
+└──────┬──────────────────────────────────────┘
+       │
+       ▼
+┌─────────────────────────────────────────────┐
+│  Step 2: Skill Extraction                   │
+│  ├─ Auto-extract from description           │
+│  └─ Semantic matching against taxonomy      │
+└──────┬──────────────────────────────────────┘
+       │
+       ▼
+┌─────────────────────────────────────────────┐
+│  Step 3: Embedding Generation               │
+│  └─ BGE Model: Create job embedding         │
+└──────┬──────────────────────────────────────┘
+       │
+       ▼
+┌─────────────────────────────────────────────┐
+│  Step 4: Database Storage                   │
+│  └─ Store job with embedding and skills     │
+└─────────────────────────────────────────────┘
+```
+
+### Workflow 3: Candidate-Job Matching
+
+```
+┌─────────────┐     ┌─────────────┐
+│  Candidate  │     │    Job      │
+│  Embedding  │     │  Embedding  │
+└──────┬──────┘     └──────┬──────┘
+       │                   │
+       └─────────┬─────────┘
+                 │
+                 ▼
+┌─────────────────────────────────────────────┐
+│  Component 1: Embedding Similarity (70%)    │
+│  ├─ Cosine similarity between embeddings    │
+│  └─ Score range: 0.0 - 1.0                 │
+└──────┬──────────────────────────────────────┘
+       │
+       ▼
+┌─────────────────────────────────────────────┐
+│  Component 2: Skill Matching (30%)          │
+│  ├─ Semantic skill comparison               │
+│  ├─ Matched skills found                    │
+│  ├─ Missing skills identified               │
+│  └─ Skill overlap score calculated          │
+└──────┬──────────────────────────────────────┘
+       │
+       ▼
+┌─────────────────────────────────────────────┐
+│  Hybrid Score Calculation                   │
+│  Final = (0.7 × Embedding) +                │
+│          (0.3 × Skill Match)                │
+└──────┬──────────────────────────────────────┘
+       │
+       ▼
+┌─────────────────────────────────────────────┐
+│  Decision Logic                             │
+│  ├─ Score ≥ 75% → Shortlisted              │
+│  ├─ Score ≥ 60% → Review                   │
+│  └─ Score < 60% → Rejected                 │
+└──────┬──────────────────────────────────────┘
+       │
+       ▼
+┌─────────────────────────────────────────────┐
+│  Store Match Result                         │
+│  ├─ Final score                             │
+│  ├─ Matched skills                          │
+│  ├─ Missing skills                          │
+│  └─ Interview ready flag                    │
+└─────────────────────────────────────────────┘
+```
+
+## 📊 Matching Algorithm Details
+
+### Hybrid Scoring Formula
+
+```
+Final Score = (Embedding_Weight × Embedding_Score) + (Skill_Weight × Skill_Score)
+
+Where:
+- Embedding_Weight = 0.7 (70% importance)
+- Skill_Weight = 0.3 (30% importance)
+- Embedding_Score = Cosine similarity between resume and job embeddings
+- Skill_Score = Matched skills / Total required skills
+```
+
+### Decision Criteria
+
+| Score Range | Status | Action |
+|------------|--------|--------|
+| 75% - 100% | Shortlisted | Ready for interview |
+| 60% - 74% | Review | Human review recommended |
+| 0% - 59% | Rejected | Not suitable |
+
+## 📁 Project Structure
+
+```
+fyp-ai-recruitment-system/
+│
+├── app/
+│   ├── api/
+│   │   └── endpoints/
+│   │       ├── candidate.py      # Candidate CRUD operations
+│   │       ├── job.py            # Job CRUD operations
+│   │       └── match.py          # Matching endpoints
+│   │
+│   ├── core/
+│   │   └── config.py             # Configuration settings
+│   │
+│   ├── db/
+│   │   ├── database.py           # Database connection
+│   │   └── models.py             # SQLAlchemy models
+│   │
+│   ├── models/
+│   │   ├── embedding_model.py    # BGE embedding model
+│   │   ├── resume_parser.py      # NER model for extraction
+│   │   ├── document_layout.py    # LayoutLMv3 analyzer
+│   │   ├── skill_extractor.py    # Semantic skill extraction
+│   │   ├── matcher.py            # Hybrid matching logic
+│   │   └── model_manager.py      # Model management
+│   │
+│   ├── services/
+│   │   ├── candidate_service.py  # Candidate business logic
+│   │   ├── job_service.py        # Job business logic
+│   │   └── match_service.py      # Matching business logic
+│   │
+│   ├── schemas/
+│   │   ├── candidate_schema.py   # Candidate data models
+│   │   ├── job_schema.py         # Job data models
+│   │   └── match_schema.py       # Match data models
+│   │
+│   ├── utils/
+│   │   ├── file_handler.py       # File processing
+│   │   ├── text_cleaner.py       # Text preprocessing
+│   │   ├── id_generator.py       # Unique ID generation
+│   │   └── deduplicator.py       # Duplicate detection
+│   │
+│   └── main.py                   # FastAPI application
+│
+├── models/                       # Downloaded model cache
+├── uploads/                      # Uploaded resume storage
+├── logs/                         # Application logs
+├── requirements.txt              # Python dependencies
+├── run.py                        # Application runner
+└── README.md                     # This file
+```
+
+## 🛠️ Installation
+
+### Prerequisites
+
+- Python 3.8 or higher
+- 8GB+ RAM recommended (for model loading)
+- 5GB free disk space (for models)
+
+### Step 1: Clone Repository
+
+```bash
+git clone <your-repo-url>
+cd fyp-ai-recruitment-system
+```
+
+### Step 2: Create Virtual Environment
+
+```bash
+# Windows
+python -m venv venv
+venv\Scripts\activate
+
+# Linux/Mac
+python3 -m venv venv
+source venv/bin/activate
+```
+
+### Step 3: Install Dependencies
+
+```bash
+pip install --upgrade pip
 pip install -r requirements.txt
-
-# 3. Run the application
-python integrated_cv_skill_api.py
 ```
 
-### **Requirements File** (`requirements.txt`)
-```
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
-sqlalchemy==2.0.23
-pdfplumber==0.10.3
-python-docx==1.1.0
-pytesseract==0.3.10
-Pillow==10.1.0
-pandas==2.1.3
-numpy==1.24.3
-scikit-learn==1.3.2
-joblib==1.3.2
-python-multipart==0.0.6
-```
+### Step 4: Create Directories
 
-## 📡 **API Endpoints**
-
-### **1. CV Upload & Parsing**
-**Endpoint:** `POST /cv/upload`
 ```bash
-curl -X POST "http://127.0.0.1:8000/cv/upload" \
-  -H "accept: application/json" \
-  -F "file=@your_cv.pdf"
+mkdir models uploads logs
 ```
 
-**Response:**
+### Step 5: Run Application
+
+```bash
+python run.py
+```
+
+The server will start at `http://127.0.0.1:8000`
+
+## 📚 API Documentation
+
+Once running, access interactive API docs at:
+- Swagger UI: `http://127.0.0.1:8000/docs`
+- ReDoc: `http://127.0.0.1:8000/redoc`
+
+### API Endpoints
+
+#### Candidates
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/candidate/upload-resume` | Upload resume (PDF/DOCX) |
+| GET | `/candidate/` | Get all candidates |
+| GET | `/candidate/{candidate_id}` | Get candidate by ID |
+| DELETE | `/candidate/{candidate_id}` | Delete candidate |
+
+#### Jobs
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/job/create` | Create job posting |
+| GET | `/job/` | Get all jobs |
+| GET | `/job/{job_id}` | Get job by ID |
+| DELETE | `/job/{job_id}` | Delete job |
+
+#### Matching
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/match/` | Create single match |
+| POST | `/match/job/{job_id}/batch` | Batch match all candidates |
+| GET | `/match/job/{job_id}` | Get matches for job |
+| GET | `/match/job/{job_id}/top` | Get top N candidates |
+| GET | `/match/job/{job_id}/ready` | Get interview-ready candidates |
+| GET | `/match/candidate/{candidate_id}` | Get matches for candidate |
+| POST | `/match/job/{job_id}/recalculate` | Recalculate all matches |
+
+## 💡 Usage Examples
+
+### 1. Upload Resume
+
+```bash
+curl -X POST "http://127.0.0.1:8000/candidate/upload-resume" \
+  -F "file=@/path/to/resume.pdf"
+```
+
+Response:
 ```json
 {
-  "candidate_id": "CAND-231231-JOHNDO",
-  "name": "John Doe",
-  "email": "john.doe@email.com",
-  "phone": "+1234567890",
-  "skills": {
-    "programming": ["python", "javascript"],
-    "databases": ["sql", "mongodb"]
-  },
-  "normalized_skills": ["python", "javascript", "sql", "mongodb"],
-  "education": [...],
-  "experience": [...]
+  "success": true,
+  "candidate_id": "cand_20240502_abc123",
+  "is_new": true,
+  "message": "New candidate created",
+  "candidate": {
+    "candidate_id": "cand_20240502_abc123",
+    "name": "John Doe",
+    "email": "john.doe@example.com",
+    "phone": "+1234567890",
+    "skills": ["Python", "Machine Learning", "SQL"],
+    "created_at": "2024-05-02T10:30:00"
+  }
 }
 ```
 
-### **2. Job Description Processing**
-**Endpoint:** `POST /job/upload`
+### 2. Create Job
+
 ```bash
-curl -X POST "http://127.0.0.1:8000/job/upload" \
+curl -X POST "http://127.0.0.1:8000/job/create" \
   -H "Content-Type: application/json" \
   -d '{
-    "job_title": "Senior Python Developer",
+    "title": "Senior Python Developer",
+    "description": "Looking for Python expert with ML experience...",
     "company": "Tech Corp",
-    "job_description": "Looking for Python developer with Django experience..."
+    "skills_required": ["Python", "Machine Learning", "PostgreSQL"]
   }'
 ```
 
-### **3. Skill Matching (Core Engine)**
-**Endpoint:** `POST /match/skills`
+### 3. Match Candidate to Job
+
 ```bash
-curl -X POST "http://127.0.0.1:8000/match/skills" \
+curl -X POST "http://127.0.0.1:8000/match/" \
   -H "Content-Type: application/json" \
   -d '{
-    "candidate_id": "CAND-231231-JOHNDO",
-    "job_id": 1
+    "candidate_id": "cand_20240502_abc123",
+    "job_id": "job_20240502_xyz789"
   }'
 ```
 
-**Response:**
+Response:
 ```json
 {
-  "match_score": 85.5,
-  "matched_skills": ["python", "django", "sql"],
-  "missing_required": ["aws"],
-  "explanations": [
-    "Excellent match! Candidate has most required skills.",
-    "Matches 3 required skills: python, django, sql"
-  ]
+  "match_id": "match_20240502_def456",
+  "candidate_id": "cand_20240502_abc123",
+  "job_id": "job_20240502_xyz789",
+  "similarity_score": 0.85,
+  "matched_skills": ["Python", "Machine Learning"],
+  "missing_skills": ["PostgreSQL"],
+  "ready_for_interview": true,
+  "created_at": "2024-05-02T10:35:00"
 }
 ```
 
-### **4. Candidate Readiness Summary**
-**Endpoint:** `GET /candidate/{candidate_id}/summary`
+### 4. Get Top Candidates for Job
+
 ```bash
-curl "http://127.0.0.1:8000/candidate/CAND-231231-JOHNDO/summary"
+curl "http://127.0.0.1:8000/match/job/job_20240502_xyz789/top?top_n=5"
 ```
 
-## 🗂️ **Project Structure**
+## 🔧 Configuration
 
-```
-cv-screening-system/
-├── integrated_cv_skill_api.py      # Main FastAPI application
-├── models/                         # ML models directory
-├── cv_screening.db                 # SQLite database (auto-generated)
-├── .gitignore                      # Git ignore rules
-├── README.md                       # This file
-└── requirements.txt               # Python dependencies
-```
+Edit `app/core/config.py` to customize:
 
-## 🧩 **Architecture Components**
-
-### **Services**
-- **`CVParserService`**: Handles CV text extraction and parsing
-- **`JobParserService`**: Extracts skills from job descriptions  
-- **`SkillMatchService`**: Core matching algorithm with ML integration
-- **`SkillNormalizer`**: Standardizes skill names using taxonomy
-
-### **Database Models**
-- **`Candidate`**: Candidate personal information
-- **`CandidateProfile`**: Structured CV data and skills
-- **`JobProfile`**: Job requirements with normalized skills
-- **`SkillMatchResult`**: Matching results and explanations
-
-### **Skill Taxonomy**
 ```python
-# Example skill normalization
-"Python 3" → "python"
-"React.js" → "javascript"  
-"AWS EC2" → "aws"
-"Machine Learning" → "machine_learning"
+# API Settings
+api_host = "127.0.0.1"
+api_port = 8000
+
+# Database
+database_url = "sqlite:///recruitment.db"
+
+# Model Settings
+embedding_model = "BAAI/bge-small-en-v1.5"
+ner_model = "xlm-roberta-base-finetuned-conll03-english"
+
+# Matching Weights
+embedding_weight = 0.7  # 70% embedding similarity
+skill_weight = 0.3       # 30% skill overlap
+
+# Thresholds
+match_shortlist_threshold = 0.75  # 75% for shortlist
+match_review_threshold = 0.60      # 60% for review
 ```
 
-## 🔍 **Usage Examples**
+## 📈 Performance Optimization
 
-### **Example 1: Complete CV Screening Pipeline**
+### Model Caching
+- Models are downloaded once and cached locally
+- Singleton pattern prevents redundant loading
+- Models persist across API requests
+
+### Batch Processing
+- Use background tasks for batch matching
+- Prevents blocking on large operations
+- Ideal for matching hundreds of candidates
+
+### Database Indexing
+- Indexes on candidate_id, job_id, match scores
+- Optimized queries for fast retrieval
+- SQLite with connection pooling
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+**Issue**: `cannot import name 'cached_download'`
+**Solution**: Upgrade huggingface_hub
+```bash
+pip install --upgrade huggingface_hub==0.20.3
+```
+
+**Issue**: Database missing columns
+**Solution**: Delete database and restart
+```bash
+del recruitment.db  # Windows
+rm recruitment.db   # Linux/Mac
+python run.py
+```
+
+**Issue**: Out of memory loading models
+**Solution**: Use smaller models in config
 ```python
-# 1. Upload CV
-response = requests.post("http://127.0.0.1:8000/cv/upload", 
-                        files={"file": open("cv.pdf", "rb")})
-candidate_id = response.json()["candidate_id"]
-
-# 2. Process job
-job_data = {
-    "job_title": "Data Scientist",
-    "job_description": "Need Python, ML, and SQL skills..."
-}
-job_response = requests.post("http://127.0.0.1:8000/job/upload", 
-                            json=job_data)
-job_id = job_response.json()["job_id"]
-
-# 3. Match skills
-match_data = {"candidate_id": candidate_id, "job_id": job_id}
-match_response = requests.post("http://127.0.0.1:8000/match/skills", 
-                              json=match_data)
-
-# 4. Get summary
-summary = requests.get(f"http://127.0.0.1:8000/candidate/{candidate_id}/summary")
+embedding_model = "all-MiniLM-L6-v2"  # Smaller, 384-dim
 ```
 
-### **Example 2: Batch Processing**
-```python
-# Process multiple CVs
-cv_files = ["cv1.pdf", "cv2.docx", "cv3.txt"]
-candidates = []
-for cv_file in cv_files:
-    result = requests.post("http://127.0.0.1:8000/cv/upload", 
-                          files={"file": open(cv_file, "rb")})
-    candidates.append(result.json())
-```
+## 📝 License
 
-## 🛠️ **Development**
+This project is for educational and research purposes.
 
-### **Running in Development Mode**
-```bash
-# With auto-reload
-uvicorn integrated_cv_skill_api:app --reload --host 0.0.0.0 --port 8000
+## 🤝 Contributing
 
-# Or use the built-in runner
-python integrated_cv_skill_api.py
-```
+1. Fork the repository
+2. Create feature branch
+3. Commit changes
+4. Push to branch
+5. Create Pull Request
 
-### **Access API Documentation**
-- **Swagger UI**: http://127.0.0.1:8000/docs
-- **ReDoc**: http://127.0.0.1:8000/redoc
+## 📧 Contact
 
-### **Health Check**
-```bash
-curl http://127.0.0.1:8000/health
-```
+For questions or support, please open an issue on GitHub.
 
-## 📈 **Performance Metrics**
+## 🙏 Acknowledgements
 
-| Metric | Value | Description |
-|--------|-------|-------------|
-| CV Parsing Speed | < 2s per CV | Average processing time |
-| Skill Recognition | 50+ skills | Technical and soft skills |
-| Matching Accuracy | > 85% | Based on test datasets |
-| File Size Limit | 10MB | Maximum CV file size |
-
-## 🔧 **Configuration**
-
-### **Environment Variables**
-```bash
-# Database configuration
-export DATABASE_URL="sqlite:///cv_screening.db"  # Default
-
-# File upload settings
-export MAX_FILE_SIZE=10485760  # 10MB
-```
-
-### **Supported File Formats**
-- **PDF** (`.pdf`) - Text extraction via pdfplumber
-- **Word Documents** (`.docx`) - Via python-docx
-- **Text Files** (`.txt`) - Direct reading
-- **Images** (`.png`, `.jpg`, `.jpeg`) - OCR via Tesseract
-
-
-
-
-## 📄 **License**
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 👨‍💻 **Author**
-
-**Awais Aleem**
-- GitHub: [@awaisaleem1](https://github.com/awaisaleem1)
-- Project: [CV Screening System](https://github.com/awaisaleem1/cv-screening-system)
-
-## 🌟 **Acknowledgments**
-
-- Built with [FastAPI](https://fastapi.tiangolo.com/)
-- Text extraction with [pdfplumber](https://github.com/jsvine/pdfplumber)
-- OCR capabilities with [Tesseract](https://github.com/tesseract-ocr/tesseract)
-- Machine learning with [scikit-learn](https://scikit-learn.org/)
-
-## 🆘 **Support & Issues**
-
-Found a bug or have a feature request? Please [open an issue](https://github.com/awaisaleem1/cv-screening-system/issues).
-
----
-
-<div align="center">
-  
-**⭐ Star this repo if you find it useful!**
-
-[![GitHub stars](https://img.shields.io/github/stars/awaisaleem1/cv-screening-system?style=social)](https://github.com/awaisaleem1/cv-screening-system/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/awaisaleem1/cv-screening-system?style=social)](https://github.com/awaisaleem1/cv-screening-system/network/members)
-
-</div>
-
-
-3. Consider adding example CVs and job descriptions for testing
-
-Would you like me to create the `requirements.txt` file or any other supporting files?
+- [Hugging Face](https://huggingface.co/) for transformer models
+- [Sentence Transformers](https://www.sbert.net/) for embedding models
+- [FastAPI](https://fastapi.tiangolo.com/) for the web framework
+- [LayoutLMv3](https://arxiv.org/abs/2204.08387) team for document AI
